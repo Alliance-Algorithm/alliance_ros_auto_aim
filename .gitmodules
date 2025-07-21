@@ -1,3 +1,4 @@
 [submodule "alliance_auto_aim"]
 	path = alliance_auto_aim
 	url = git@github.com:Alliance-Algorithm/alliance_auto_aim.git
+	branch = main
