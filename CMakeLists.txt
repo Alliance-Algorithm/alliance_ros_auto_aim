@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE "Release")
 
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--copy-dt-needed-entries")
 
 
 
@@ -23,16 +24,25 @@ alliance_auto_aim/src/core/*.cpp
 alliance_auto_aim/src/util/*.cpp
 src/*.cpp
 )
+file(GLOB_RECURSE sources_test CONFIGURE_DEPENDS  
+tests/*.cpp
+)
+
 add_library(${PROJECT_NAME} SHARED
     ${sources_v1}
     )
-
+add_executable(${PROJECT_NAME}_test
+    ${sources_v1}
+    ${sources_test}
+    )
+ament_target_dependencies(${PROJECT_NAME}_test rclcpp visualization_msgs)
 include_directories(./alliance_auto_aim/include ./alliance_auto_aim/src ./include)
 ### OpenCV ===
 # set(OpenCV_DIR /path/to/opencv/build) # 如果需要这个可以方便你设置
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC  ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME}_test   ${OpenCV_LIBS})
 ### OpenCV End ===
 
 ### Eigen ===
@@ -44,23 +54,29 @@ INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
 find_package(TBB REQUIRED)
 include_directories(${TBB_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${TBB_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_test  ${TBB_LIBRARIES})
 ### TBB End ===
 
 ### OpenVINO ===
 find_package(OpenVINO REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC openvino::runtime)
+target_link_libraries(${PROJECT_NAME}_test  openvino::runtime)
 ### OpenVINO End ===
 
 ### ceres ===
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CERES_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_test  ${CERES_LIBRARIES})
 ### ceres End ===
 
 
 install(DIRECTORY alliance_auto_aim/models/
 DESTINATION share/${PROJECT_NAME}/
 )
+
+
+
 install(DIRECTORY 
 alliance_auto_aim/include/ 
 include/
@@ -72,6 +88,12 @@ install(TARGETS ${PROJECT_NAME}
 EXPORT ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ${PROJECT_NAME}_test
+EXPORT ${PROJECT_NAME}_test
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 # 导出库和依赖
