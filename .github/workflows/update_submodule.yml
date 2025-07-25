@@ -1,9 +1,10 @@
 name: Update Submodules
 
-on:
+on: 
   schedule:
     # 每天凌晨 2 点自动更新 (UTC时间)
     - cron: '0 2 * * *'
+  workflow_dispatch:
     
 jobs:
   update-submodules:
