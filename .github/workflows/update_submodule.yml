@@ -18,6 +18,7 @@ jobs:
 
       - name: Update all submodules to latest
         run: |
+          git pull -f
           git submodule update --remote --recursive
           git add .
           
