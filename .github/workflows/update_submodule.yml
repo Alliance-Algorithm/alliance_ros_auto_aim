@@ -37,5 +37,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -a -m "chore: update submodules to latest versions"
+          git commit -am "Auto updated submodule references" && git push || echo "No changes to commit"
           git push
