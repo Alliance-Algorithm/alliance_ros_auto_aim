@@ -6,7 +6,7 @@
 #include <bit>
 #include <ctime>
 
-static world_exe::data::CameraGimbalMuzzleSyncData sync_data_process(
+world_exe::data::CameraGimbalMuzzleSyncData world_exe::ros::sync_data_process(
     const world_exe::ros::SyncData_Feb_TimeCameraGimbal_8byteAlignas &data) {
   auto gimbal_to_muzzle_affine = Eigen::Affine3d::Identity();
   gimbal_to_muzzle_affine.translate(Eigen::Translation3d{
