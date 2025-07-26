@@ -15,12 +15,19 @@ namespace world_exe::ros {
 class ArmorMarkerGenerator {
 public:
     static void generate(
-        const world_exe::interfaces::IArmorInCamera&, const world_exe::enumeration::ArmorIdFlag&, const std::string&,
-        visualization_msgs::msg::MarkerArray&);
+        const world_exe::interfaces::IArmorInCamera&, const world_exe::enumeration::ArmorIdFlag&,
+        const std::string&, visualization_msgs::msg::MarkerArray&);
 
     static void generate(
-        const world_exe::interfaces::IArmorInGimbalControl&, const world_exe::enumeration::ArmorIdFlag&,
-        const std::string&, visualization_msgs::msg::MarkerArray&);
+        const world_exe::interfaces::IArmorInGimbalControl&,
+        const world_exe::enumeration::ArmorIdFlag&, const std::string&,
+        visualization_msgs::msg::MarkerArray&);
+    static void generate_all(
+        const world_exe::interfaces::IArmorInCamera&, const std::string&,
+        visualization_msgs::msg::MarkerArray&);
+    static void generate_all(
+        const world_exe::interfaces::IArmorInGimbalControl&, const std::string&,
+        visualization_msgs::msg::MarkerArray&);
 };
 
 class ArmorMarkerInCameraSpacing {
@@ -37,7 +44,9 @@ public:
 
     void set_time_stamp(const rclcpp::Time&);
 
-    visualization_msgs::msg::MarkerArray generate(const std::vector<data::ArmorCameraSpacing>&);
+    void generate(
+        const std::vector<data::ArmorCameraSpacing>& armors_data,
+        visualization_msgs::msg::MarkerArray& in_out_marker_arr);
 
 private:
     class Impl;
@@ -58,7 +67,8 @@ public:
 
     void set_time_stamp(const rclcpp::Time&);
 
-    visualization_msgs::msg::MarkerArray generate(const std::vector<data::ArmorGimbalControlSpacing>&);
+    void generate(
+        const std::vector<data::ArmorGimbalControlSpacing>&, visualization_msgs::msg::MarkerArray&);
 
 private:
     class Impl;

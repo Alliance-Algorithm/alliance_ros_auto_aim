@@ -37,12 +37,12 @@ public:
 
     void set_time_stamp(const rclcpp::Time& time) { time_stamp_ = time; }
 
-    visualization_msgs::msg::MarkerArray generate(const std::vector<data::ArmorGimbalControlSpacing>& armors_data) {
+    void generate(
+        const std::vector<data::ArmorGimbalControlSpacing>& armors_data,
+        visualization_msgs::msg::MarkerArray& in_out_marker_arr) {
         if (frame_id_.empty()) {
             throw std::runtime_error("ArmorMarker frame_id not setting!");
         }
-
-        visualization_msgs::msg::MarkerArray marker_array;
 
         int marker_count = 0;
         for (const auto& armor : armors_data) {
@@ -79,9 +79,8 @@ public:
             marker.pose.orientation.w = armor.orientation.w();
             marker.lifetime           = rclcpp::Duration::from_seconds(0.1);
 
-            marker_array.markers.push_back(marker);
+            in_out_marker_arr.markers.push_back(marker);
         }
-        return marker_array;
     }
 
 private:
@@ -97,17 +96,24 @@ ArmorMarkerInGimbalControlSpacing::ArmorMarkerInGimbalControlSpacing()
 
 ArmorMarkerInGimbalControlSpacing::~ArmorMarkerInGimbalControlSpacing() = default;
 
-void ArmorMarkerInGimbalControlSpacing::set_frame_id(const std::string& frame_id) { pimpl_->set_frame_id(frame_id); }
+void ArmorMarkerInGimbalControlSpacing::set_frame_id(const std::string& frame_id) {
+    pimpl_->set_frame_id(frame_id);
+}
 
 std::string ArmorMarkerInGimbalControlSpacing::frame_id() { return pimpl_->frame_id(); }
 
-void ArmorMarkerInGimbalControlSpacing::set_color(float r, float g, float b, float a) { pimpl_->set_color(r, g, b, a); }
+void ArmorMarkerInGimbalControlSpacing::set_color(float r, float g, float b, float a) {
+    pimpl_->set_color(r, g, b, a);
+}
 
-void ArmorMarkerInGimbalControlSpacing::set_time_stamp(const rclcpp::Time& time) { pimpl_->set_time_stamp(time); }
+void ArmorMarkerInGimbalControlSpacing::set_time_stamp(const rclcpp::Time& time) {
+    pimpl_->set_time_stamp(time);
+}
 
-visualization_msgs::msg::MarkerArray
-    ArmorMarkerInGimbalControlSpacing::generate(const std::vector<data::ArmorGimbalControlSpacing>& armors_data) {
-    return pimpl_->generate(armors_data);
+void ArmorMarkerInGimbalControlSpacing::generate(
+    const std::vector<data::ArmorGimbalControlSpacing>& armors_data,
+    visualization_msgs::msg::MarkerArray& in_out_marker_arr) {
+    return pimpl_->generate(armors_data, in_out_marker_arr);
 }
 
 } // namespace world_exe::ros
