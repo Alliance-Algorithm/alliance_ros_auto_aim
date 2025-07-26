@@ -6,13 +6,18 @@
   <description>TODO: Package description</description>
   <maintainer email="1780284652@qq.com">alray</maintainer>
   <license>TODO: License declaration</license>
-  <depend>ament_cmake</depend>
 
-  <buildtool_depend>rclcpp</buildtool_depend>
-  <buildtool_depend>visualization_msgs</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_export_depend>ament_lint_auto</build_export_depend>
-  <build_export_depend>ament_lint_common</build_export_depend>
+  <depend>rclcpp</depend>
+  <depend>visualization_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
