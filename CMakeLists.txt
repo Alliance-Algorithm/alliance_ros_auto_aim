@@ -35,7 +35,16 @@ add_executable(${PROJECT_NAME}_test
     ${sources_v1}
     ${sources_test}
     )
-ament_target_dependencies(${PROJECT_NAME}_test rclcpp visualization_msgs)
+target_link_libraries(${PROJECT_NAME}_test rclcpp::rclcpp)
+ament_target_dependencies(${PROJECT_NAME}_test 
+    rclcpp 
+    visualization_msgs
+    geometry_msgs
+    tf2 
+    tf2_ros
+    tf2_geometry_msgs
+    )
+
 include_directories(./alliance_auto_aim/include ./alliance_auto_aim/src ./include)
 ### OpenCV ===
 # set(OpenCV_DIR /path/to/opencv/build) # 如果需要这个可以方便你设置
@@ -70,6 +79,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${CERES_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}_test  ${CERES_LIBRARIES})
 ### ceres End ===
 
+ament_target_dependencies(${PROJECT_NAME} PUBLIC 
+    rclcpp
+    visualization_msgs
+    geometry_msgs
+    tf2 
+    tf2_ros
+    tf2_geometry_msgs
+) 
 
 install(DIRECTORY alliance_auto_aim/models/
 DESTINATION share/${PROJECT_NAME}/
