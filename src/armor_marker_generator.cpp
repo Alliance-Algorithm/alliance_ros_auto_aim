@@ -26,6 +26,7 @@ void ArmorMarkerGenerator::generate(
 
     ArmorMarkerInGimbalControlSpacing armor_marker_camera;
     armor_marker_camera.set_frame_id(frame_id);
+    armor_marker_camera.set_color(255, 0, 0, 255);
     armor_marker_camera.generate(armor_interface.GetArmors(armor_id), marker_array);
 
     // TODO:time stamp setting

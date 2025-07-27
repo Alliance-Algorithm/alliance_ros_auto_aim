@@ -79,6 +79,34 @@ public:
             marker.lifetime           = rclcpp::Duration::from_seconds(0.1);
 
             in_out_marker_arr.markers.push_back(marker);
+
+            visualization_msgs::msg::Marker marker2;
+            marker2.set__color(color_);
+
+            if (time_stamp_.nanoseconds() == 0) {
+                marker2.header.stamp = rclcpp::Clock().now();
+            } else {
+                marker2.header.stamp = time_stamp_;
+            }
+            marker2.header.frame_id = frame_id_;
+
+            marker2.ns     = "armor_forward";
+            marker2.id     = marker_count++;
+            marker2.type   = visualization_msgs::msg::Marker::ARROW;
+            marker2.action = visualization_msgs::msg::Marker::ADD;
+
+            marker2.scale.x            = 0.2; // 箭头长度
+            marker2.scale.y            = 0.01;
+            marker2.scale.z            = 0.01;
+            marker2.pose.position.x    = armor.position.x();
+            marker2.pose.position.y    = armor.position.y();
+            marker2.pose.position.z    = armor.position.z();
+            marker2.pose.orientation.x = armor.orientation.x();
+            marker2.pose.orientation.y = armor.orientation.y();
+            marker2.pose.orientation.z = armor.orientation.z();
+            marker2.pose.orientation.w = armor.orientation.w();
+            marker2.lifetime           = rclcpp::Duration::from_seconds(0.1);
+            in_out_marker_arr.markers.emplace_back(marker2);
         }
     }
 

@@ -21,6 +21,6 @@ struct alignas(8) SyncData_Feb_TimeCameraGimbal_8byteAlignas {
     double gimbal_to_muzzle_rotation_y;
     double gimbal_to_muzzle_rotation_z;
 };
-data::CameraGimbalMuzzleSyncData sync_data_process(
-    const SyncData_Feb_TimeCameraGimbal_8byteAlignas& data);
+data::CameraGimbalMuzzleSyncData
+    sync_data_process(const SyncData_Feb_TimeCameraGimbal_8byteAlignas& data);
 } // namespace world_exe::ros
