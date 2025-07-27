@@ -37,12 +37,15 @@ add_executable(${PROJECT_NAME}_test
     )
 target_link_libraries(${PROJECT_NAME}_test rclcpp::rclcpp)
 ament_target_dependencies(${PROJECT_NAME}_test 
-    rclcpp 
-    visualization_msgs
-    geometry_msgs
-    tf2 
-    tf2_ros
-    tf2_geometry_msgs
+rclcpp
+std_msgs 
+visualization_msgs
+geometry_msgs
+tf2 
+tf2_ros
+tf2_geometry_msgs
+sensor_msgs
+cv_bridge
     )
 
 include_directories(./alliance_auto_aim/include ./alliance_auto_aim/src ./include)
