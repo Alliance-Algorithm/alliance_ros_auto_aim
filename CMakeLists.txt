@@ -18,10 +18,8 @@ ament_auto_find_build_dependencies (REQUIRED)
 file(GLOB_RECURSE sources_v1 CONFIGURE_DEPENDS  
 alliance_auto_aim/include/*.hpp 
 alliance_auto_aim/src/*.hpp 
-alliance_auto_aim/src/v1/*.cpp 
-alliance_auto_aim/src/v1/*.cc
-alliance_auto_aim/src/core/*.cpp
-alliance_auto_aim/src/util/*.cpp
+alliance_auto_aim/src/*/*.cpp 
+alliance_auto_aim/src/*/*.cc
 src/*.cpp
 )
 file(GLOB_RECURSE sources_test CONFIGURE_DEPENDS  

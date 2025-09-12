@@ -1,7 +1,7 @@
 
 #include "./tests.hpp"
+#include "core/system_factory.hpp"
 #include "enum/system_version.hpp"
-#include "system_factory.hpp"
 
 int main(int argc, const char *const *argv) {
   world_exe::core::SystemFactory::Build(
