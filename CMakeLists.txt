@@ -67,7 +67,7 @@ DESTINATION share/${PROJECT_NAME}/
 install(DIRECTORY 
 alliance_auto_aim/include/ 
 include/
-DESTINATION include
+DESTINATION include/${PROJECT_NAME}
 )
 
 
