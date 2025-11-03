@@ -5,7 +5,7 @@
 namespace world_exe::ros {
 
 struct alignas(8) SyncData_Feb_TimeCameraGimbal_8byteAlignas {
-    uint64_t time_stamp;
+    long   time_stamp_in_nanosecond;
     double camera_to_gimbal_translation_x;
     double camera_to_gimbal_translation_y;
     double camera_to_gimbal_translation_z;

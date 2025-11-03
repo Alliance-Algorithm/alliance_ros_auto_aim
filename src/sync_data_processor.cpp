@@ -3,7 +3,7 @@
 #include "Eigen/src/Geometry/Transform.h"
 #include "Eigen/src/Geometry/Translation.h"
 #include "data/sync_data.hpp"
-#include <bit>
+#include "data/time_stamped.hpp"
 #include <ctime>
 
 world_exe::data::CameraGimbalMuzzleSyncData world_exe::ros::sync_data_process(
@@ -29,7 +29,7 @@ world_exe::data::CameraGimbalMuzzleSyncData world_exe::ros::sync_data_process(
             data.camera_to_gimbal_rotation_w, data.camera_to_gimbal_rotation_x,
             data.camera_to_gimbal_rotation_y, data.camera_to_gimbal_rotation_z});
     return {
-        .camera_capture_begin_time_stamp = std::bit_cast<time_t>(data.time_stamp),
+        .camera_capture_begin_time_stamp = data::TimeStamp::from_nanosec(data.time_stamp_in_nanosecond),
         .camera_to_gimbal                = camera_to_gimbal_affine,
         .gimbal_to_muzzle                = gimbal_to_muzzle_affine};
 }

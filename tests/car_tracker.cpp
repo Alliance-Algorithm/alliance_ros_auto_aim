@@ -16,7 +16,7 @@
 #include <rclcpp/subscription.hpp>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/u_int8_multi_array.hpp>
@@ -27,15 +27,14 @@
 
 #include "armor_marker.hpp"
 #include "core/event_bus.hpp"
+#include "core/system_factory.hpp"
 #include "data/sync_data.hpp"
-#include "double_buffer.hpp"
-#include "fps_counter.hpp"
+#include "data/time_stamped.hpp"
 #include "interfaces/armor_in_camera.hpp"
-#include "interfaces/predictor_update_package.hpp"
 #include "parameters/params_system_v1.hpp"
 #include "parameters/profile.hpp"
-#include "sync/hik_camera_syncdata.hpp"
-#include "system_factory.hpp"
+#include "data/sync_data.hpp"
+#include "utils/fps_counter.hpp"
 
 class CarTrackerTest : public rclcpp::Node {
 public:
@@ -54,14 +53,12 @@ public:
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     std::thread([this]() {
       auto begin = std::chrono::steady_clock::now();
-      data.camera_capture_begin_time_stamp = begin.time_since_epoch().count();
+      data.camera_capture_begin_time_stamp = data::TimeStamp{begin.time_since_epoch()};
       while (true) {
 
-        data.camera_capture_begin_time_stamp =
-            (std::chrono::steady_clock::now() - begin).count();
+        data.camera_capture_begin_time_stamp = data::TimeStamp{std::chrono::steady_clock::now() - begin};
 
         image_capturer_.read(mat_);
-        double_buffer_->store(mat_, data);
         if (fps_counter1.count())
           RCLCPP_INFO(get_logger(), "FPS: %lf", fps_counter1.fps());
       }
@@ -100,33 +97,33 @@ public:
           marker_pub2_->publish(msg);
         });
 
-    core::EventBus::Subscript<
-        std::shared_ptr<interfaces::IPreDictorUpdatePackage>>(
-        ParamsForSystemV1::tracker_update_event, //
-        [this](
-            const std::shared_ptr<interfaces::IPreDictorUpdatePackage> &data) {
-          // 这里同步过的，可以放心大胆的用
-        });
+    // core::EventBus::Subscript<
+    //     std::shared_ptr<interfaces::IPreDictorUpdatePackage>>(
+    //     ParamsForSystemV1::tracker_update_event, //
+    //     [this](
+    //         const std::shared_ptr<interfaces::IPreDictorUpdatePackage> &data) {
+    //       // 这里同步过的，可以放心大胆的用
+    //     });
 
 #pragma endregion
 
     world_exe::core::SystemFactory::Build(
         world_exe::enumeration::SystemVersion::V1);
-    double_buffer_ = std::make_unique<
-        DoubleBuffer<world_exe::sync::HikCameraSyncData, cv::Mat,
-                     world_exe::data::CameraGimbalMuzzleSyncData>>(
-        new world_exe::sync::HikCameraSyncData(mat_),
-        new world_exe::sync::HikCameraSyncData(mat_), [](const auto &data) {
-          const auto &[mat, d] = data;
+    // double_buffer_ = std::make_unique<
+    //     DoubleBuffer<world_exe::sync::HikCameraSyncData, cv::Mat,
+    //                  world_exe::data::CameraGimbalMuzzleSyncData>>(
+    //     new world_exe::sync::HikCameraSyncData(mat_),
+    //     new world_exe::sync::HikCameraSyncData(mat_), [](const auto &data) {
+    //       const auto &[mat, d] = data;
 
-          world_exe::core::EventBus::Publish<
-              world_exe::data::CameraGimbalMuzzleSyncData>(
-              world_exe::parameters::ParamsForSystemV1::
-                  camera_capture_transforms,
-              d);
-          world_exe::core::EventBus::Publish<cv::Mat>(
-              world_exe::parameters::ParamsForSystemV1::raw_image_event, mat);
-        });
+    //       world_exe::core::EventBus::Publish<
+    //           world_exe::data::CameraGimbalMuzzleSyncData>(
+    //           world_exe::parameters::ParamsForSystemV1::
+    //               camera_capture_transforms,
+    //           d);
+    //       world_exe::core::EventBus::Publish<cv::Mat>(
+    //           world_exe::parameters::ParamsForSystemV1::raw_image_event, mat);
+    //     });
   }
 
 private:
@@ -160,9 +157,6 @@ private:
   rclcpp::Subscription<std_msgs::msg::UInt8MultiArray>::SharedPtr sync_sub_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-  std::unique_ptr<DoubleBuffer<world_exe::sync::HikCameraSyncData, cv::Mat,
-                               world_exe::data::CameraGimbalMuzzleSyncData>>
-      double_buffer_;
   world_exe::util::FpsCounter fps_counter{};
   world_exe::util::FpsCounter fps_counter1{};
 
@@ -174,4 +168,5 @@ int car_tracker_test(int argc, char **argv) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<CarTrackerTest>());
   rclcpp::shutdown();
+  return 0;
 }
