@@ -4,7 +4,7 @@ project(alliance_ros_auto_aim)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_BUILD_TYPE "Release")
 
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,--copy-dt-needed-entries")
@@ -31,7 +31,7 @@ add_executable(${PROJECT_NAME}_test
     )
 
 target_link_libraries(${PROJECT_NAME}       PRIVATE alliance_auto_aim)
-target_link_libraries(${PROJECT_NAME}_test  PUBLIC  ${PROJECT_NAME} alliance_auto_aim rclcpp::rclcpp)
+target_link_libraries(${PROJECT_NAME}_test  PUBLIC  ${PROJECT_NAME} alliance_auto_aim rclcpp::rclcpp )
 
 include_directories(./alliance_auto_aim/include ./alliance_auto_aim/src ./include)
 
@@ -46,6 +46,7 @@ ament_target_dependencies(${PROJECT_NAME}_test PUBLIC
   sensor_msgs
   cv_bridge
   ament_index_cpp
+  hikcamera
 )
 
 
@@ -62,14 +63,11 @@ install(DIRECTORY alliance_auto_aim/models/
 DESTINATION share/${PROJECT_NAME}/
 )
 
-
-
 install(DIRECTORY 
 alliance_auto_aim/include/ 
 include/
 DESTINATION include
 )
-
 
 install(TARGETS ${PROJECT_NAME}
 EXPORT ${PROJECT_NAME}
@@ -86,4 +84,4 @@ EXPORT ${PROJECT_NAME}_test
 # 导出库和依赖
 ament_export_targets(${PROJECT_NAME})
 
-ament_package()
+ament_auto_package()
