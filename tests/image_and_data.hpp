@@ -1,21 +1,24 @@
+#include <functional>
+#include <memory>
+#include <thread>
+
 #include "armor_marker.hpp"
 #include "core/event_bus.hpp"
 #include "data/mat_stamped.hpp"
 #include "interfaces/armor_in_camera.hpp"
+#include "interfaces/armor_in_gimbal_control.hpp"
 #include "parameters/params_system_v1.hpp"
 #include "std_msgs/msg/u_int8_multi_array.hpp"
 #include "sync_data_processor.hpp"
 #include "utils/mat_triple_buffer.hpp"
 #include "utils/time_stamp.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
-#include <functional>
-#include <iostream>
-#include <memory>
+
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/subscription.hpp>
-#include <thread>
+
 namespace alliance_auto_aim::ros::bulldup {
 
 class DataNode : public rclcpp::Node {
@@ -61,8 +64,7 @@ public:
     world_exe::core::EventBus::Subscript<
         std::shared_ptr<world_exe::interfaces::IArmorInCamera>>(
         world_exe::parameters::ParamsForSystemV1::armors_in_camera_pnp_event,
-        [&](const std::shared_ptr<world_exe::interfaces::IArmorInCamera>
-        &data)
+        [&](const std::shared_ptr<world_exe::interfaces::IArmorInCamera> &data)
             -> void {
           visualization_msgs::msg::MarkerArray msg{};
           if (data == nullptr) {

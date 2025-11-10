@@ -2,7 +2,6 @@
 #include "./image_and_data.hpp"
 
 #include "core/system_factory.hpp"
-#include "interfaces/armor_in_camera.hpp"
 #include "parameters/params_system_v1.hpp"
 #include "parameters/profile.hpp"
 #include <hikcamera/capturer.hpp>
@@ -17,11 +16,9 @@
 int main(int argc, const char *const *argv) {
   world_exe::parameters::HikCameraProfile::set_width_height(1440, 720);
 
-
   rclcpp::init(argc, argv);
   world_exe::core::SystemFactory::Build(
       world_exe::enumeration::SystemVersion::V2Debug);
-
   auto camera = hikcamera::Camera{};
   auto config = hikcamera::Config{};
   config.framerate = 500;
