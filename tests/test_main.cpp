@@ -4,6 +4,8 @@
 #include "core/system_factory.hpp"
 #include "parameters/params_system_v1.hpp"
 #include "parameters/profile.hpp"
+#include <cassert>
+#include <filesystem>
 #include <hikcamera/capturer.hpp>
 #include <memory>
 #include <opencv2/core/mat.hpp>
@@ -15,6 +17,22 @@
 
 int main(int argc, const char* const* argv) {
     world_exe::parameters::HikCameraProfile::set_width_height(1440, 720);
+    // world_exe::parameters::HikCameraProfile::set_width_height(1190, 595);
+
+    // auto image_path =
+    //     std::filesystem::path{__FILE__}.parent_path().parent_path() / "assets" / "armor.jpg";
+    // std::cout << image_path << std::endl;
+    // cv::Mat mat = cv::imread(image_path, cv::IMREAD_COLOR);
+    // std::println("({},{})", mat.rows, mat.cols);
+
+    // if (mat.empty()) {
+    //     std::cerr << "错误: 无法读取图片或图片路径错误!" << std::endl;
+    //     std::cerr << "尝试读取的路径是: " << image_path << std::endl;
+    //     return -1; // 返回错误代码
+    // }
+
+    // cv::imshow("Loaded Image (C++17)", mat);
+    // cv::waitKey(0);
 
     rclcpp::init(argc, argv);
     world_exe::core::SystemFactory::Build(world_exe::enumeration::SystemVersion::V2Debug);
