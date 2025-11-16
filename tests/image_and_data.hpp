@@ -2,6 +2,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <thread>
 
 #include "armor_marker.hpp"
@@ -17,6 +18,7 @@
 #include "std_msgs/msg/u_int8_multi_array.hpp"
 #include "sync_data_processor.hpp"
 #include "tongji/../../tests/mocks/mock_camera_tranform.hpp"
+#include "utils/fps_counter.hpp"
 #include "utils/mat_triple_buffer.hpp"
 #include "utils/time_stamp.hpp"
 #include "vector_maker.hpp"
@@ -37,7 +39,7 @@ public:
 
     DataNode(
         const std::string& image_event, const std::string& sync_data_event,
-        std::function<cv::Mat()> func)
+        std::function<std::optional<std::reference_wrapper<world_exe::data::MatStamped>>()> func)
         : rclcpp::Node("image_and_data", "/alliacne_auto_aim")
         // , mock_yaw_link2gimbal_transform_data_(
         //       Eigen::Vector3d(5, 0., 0.), 0., 0., 0.0, M_PI / 6, M_PI / 6.)
@@ -71,7 +73,7 @@ public:
                     transform_);
             });
 
-        camera_to_gimbal_subscription_ = create_subscription<geometry_msgs::msg::TransformStamped>(
+        gimbal_to_muzzle_subscription_ = create_subscription<geometry_msgs::msg::TransformStamped>(
             "/gimbal/gimbal_to_muzzle_transform", rclcpp::QoS(10),
             [&](geometry_msgs::msg::TransformStamped const& data) {
                 const auto& t = data.transform;
@@ -97,20 +99,17 @@ public:
         publisher_fire_dir_ = create_publisher<visualization_msgs::msg::Marker>(
             "/alliacne_auto_aim/fire_control_dir", 10);
 
-        capture_thread = std::thread([&func, this]() {
+        publish_thread = std::thread([image_event, &func, this]() {
+            world_exe::util::FpsCounter fps_{};
             while (true) {
-                buffer_.set(func());
-            }
-        });
-
-        publish_thread = std::thread([image_event, this]() {
-            while (true) {
-                auto mat = buffer_.get();
-                if (!mat.has_value() || mat->get().mat.empty())
+                auto mat = func();
+                if (!mat.has_value() || mat.value().get().mat.empty())
                     continue;
-
+                if (fps_.count()) {
+                    std::cout << "b: " << fps_.fps() << std::endl;
+                }
                 world_exe::core::EventBus::Publish<world_exe::data::MatStamped>(
-                    image_event, mat->get());
+                    image_event, mat.value().get());
             }
         });
 
@@ -173,22 +172,9 @@ public:
         // mock_data_generate_jthread = std::jthread([&](std::stop_token const& token) {
         //     while (!token.stop_requested()) {
         //         world_exe::core::EventBus::Publish<world_exe::data::CameraGimbalMuzzleSyncData>(
-        //             world_exe::parameters::ParamsForSystemV1::camera_capture_transforms, [this]()
-        //             {
-        //                 mock_transform_data_.camera_capture_begin_time_stamp =
-        //                     world_exe::data::TimeStamp(
-        //                         std::chrono::steady_clock::now().time_since_epoch());
-        //                 mock_transform_data_.camera_to_gimbal = Eigen::Affine3d::Identity();
-        //                 // mock_yaw_link2gimbal_transform_data_.updateAndGetTransform(0.000001);
-        //                 // .inverse();
-        //                 mock_transform_data_.gimbal_to_muzzle =
-        //                     //
-        //                     mock_pitch_link2yaw_link_transform_data_.updateAndGetTransform(0.01);
-        //                     //     .inverse();
-        //                     Eigen::Affine3d::Identity();
-        //                 return mock_transform_data_;
-        //             }());
-        //         std::this_thread::sleep_for(std::chrono::microseconds(1000));
+        //             world_exe::parameters::ParamsForSystemV1::camera_capture_transforms,
+        //             transform_);
+        //         std::this_thread::sleep_for(std::chrono::microseconds(10));
         //     }
         // });
     }
@@ -207,61 +193,6 @@ private:
     //         transform = this->mock_yaw_link2gimbal_transform_data_.updateAndGetTransform(dt);
     //     }
     //     return transform;
-    // }
-
-    // void mock_visualization_loop() {
-    //     using namespace world_exe::ros;
-    //     using namespace world_exe::enumeration;
-    //     using namespace std::chrono_literals;
-
-    //     constexpr double dt = 0.01;
-
-    //     std::vector<world_exe::data::ArmorCameraSpacing> armors_in_camera;
-    //     armors_in_camera.emplace_back(
-    //         ArmorIdFlag::InfantryIII, Eigen::Vector3d{0.1, 0.1, 0.},
-    //         Quaterniond(AngleAxisd(M_PI / 2.0, Vector3d::UnitZ())));
-
-    //     auto mock_armors_in_camera = world_exe::tongji::solver::SolvedArmor(
-    //         armors_in_camera,
-    //         world_exe::data::TimeStamp(std::chrono::steady_clock::now().time_since_epoch()));
-
-    //     while (rclcpp::ok()) {
-    //         Eigen::Affine3d T_C_to_G =
-    //             this->mock_yaw_link2gimbal_transform_data_.updateAndGetTransform(dt);
-    //         // std::cout << T_C_to_G.matrix() << std::endl;
-
-    //         auto camera2gimbal = [&T_C_to_G](const auto& armors_in_camera) {
-    //             world_exe::data::ArmorGimbalControlSpacing gimbal_armor;
-    //             gimbal_armor.id       = armors_in_camera.id;
-    //             gimbal_armor.position = T_C_to_G * armors_in_camera.position;
-    //             gimbal_armor.orientation =
-    //                 Quaterniond(T_C_to_G.rotation()) * armors_in_camera.orientation;
-    //             return gimbal_armor;
-    //         };
-
-    //         std::vector<world_exe::data::ArmorGimbalControlSpacing> armors_in_gimbal;
-    //         for (const auto& camera_armor : armors_in_camera) {
-    //             world_exe::data::ArmorGimbalControlSpacing gimbal_armor =
-    //                 camera2gimbal(camera_armor);
-    //             armors_in_gimbal.emplace_back(gimbal_armor);
-    //         }
-
-    //         auto transformed_armor = world_exe::tongji::predictor::InGimbalControlArmor(
-    //             armors_in_gimbal,
-    //             world_exe::data::TimeStamp(std::chrono::steady_clock::now().time_since_epoch()));
-
-    //         visualization_msgs::msg::MarkerArray marker_array_in_camera;
-    //         world_exe::ros::ArmorMarkerGenerator::generate_all(
-    //             mock_armors_in_camera, "camera_link", marker_array_in_camera);
-    //         mock_armor_in_camera_publisher_->publish(marker_array_in_camera);
-
-    //         visualization_msgs::msg::MarkerArray marker_array_in_gimbal;
-    //         world_exe::ros::ArmorMarkerGenerator::generate_all(
-    //             transformed_armor, "gimbal_link", marker_array_in_gimbal);
-    //         mock_armor_in_gimbal_publisher_->publish(marker_array_in_gimbal);
-
-    //         std::this_thread::sleep_for(std::chrono::duration<double>(dt));
-    //     }
     // }
 
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_pnp_;
@@ -285,8 +216,7 @@ private:
     // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
     //     mock_armor_in_gimbal_publisher_;
 
-    // std::thread mock_visualization_thread;
-    // std::jthread mock_data_generate_jthread;
+    std::jthread mock_data_generate_jthread;
 
     // world_exe::data::CameraGimbalMuzzleSyncData mock_transform_data_;
 

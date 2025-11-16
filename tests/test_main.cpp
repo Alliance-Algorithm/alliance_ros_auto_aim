@@ -5,7 +5,9 @@
 #include "parameters/params_system_v1.hpp"
 #include "parameters/profile.hpp"
 #include <cassert>
+#include <cstdio>
 #include <hikcamera/capturer.hpp>
+#include <iostream>
 #include <memory>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
@@ -20,43 +22,38 @@ int main(int argc, const char* const* argv) {
     world_exe::core::SystemFactory::Build(world_exe::enumeration::SystemVersion::V2Debug);
     auto camera            = hikcamera::Camera{};
     auto config            = hikcamera::Config{};
-    config.framerate       = 500;
+    config.framerate       = 100;
     config.timeout_ms      = 2'000;
     config.exposure_us     = 800;
     config.fixed_framerate = true;
 
     if (auto ret = camera.initialize(config); !ret) {
-        // std::println("Failed: {}", ret.error());
+        std::cout << "Failed: {}", ret.error();
     }
 
-    // world_exe::util::memory::MatTripleBuffer buffer{[] {
-    //   return world_exe::data::TimeStamp{
-    //       std::chrono::steady_clock::now().time_since_epoch()};
-    // }};
+    world_exe::util::memory::MatTripleBuffer buffer{[] {
+        return world_exe::data::TimeStamp{std::chrono::steady_clock::now().time_since_epoch()};
+    }};
     auto mat = cv::Mat();
     std::thread thread_capture{[&] {
+        world_exe::util::FpsCounter fps_{};
         while (true) {
-            if (auto ret = camera.read_image()) {
+            if (auto ret = camera.read_image(); ret.has_value()) {
                 mat = ret.value();
-                // buffer.set(mat);
-
+                buffer.set(mat);
+                if (fps_.count())
+                    std::cout << "fps: " << fps_.fps() << std::endl;
             } else {
-                // std::println("Failed: {}", ret.error());
+                std::cout << "Failed: {}", ret.error();
             }
         }
     }};
 
     auto node = std::make_shared<alliance_auto_aim::ros::bulldup::DataNode>(
         world_exe::parameters::ParamsForSystemV1::raw_image_event,
-        world_exe::parameters::ParamsForSystemV1::camera_capture_transforms, [&mat]() -> cv::Mat {
-            return mat;
-            // auto optional = buffer.get();
-            // if (optional.has_value()) {
-            //   auto &mat = optional.value().get().mat;
-            //   if (!mat.empty())
-            //     return mat;
-            // }
-            // return cv::Mat();
+        world_exe::parameters::ParamsForSystemV1::camera_capture_transforms,
+        [&mat, &buffer]() -> std::optional<std::reference_wrapper<world_exe::data::MatStamped>> {
+            return buffer.get();
         });
 
     rclcpp::spin(node);
