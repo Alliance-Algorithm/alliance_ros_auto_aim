@@ -28,7 +28,7 @@ int main(int argc, const char* const* argv) {
     config.fixed_framerate = true;
 
     if (auto ret = camera.initialize(config); !ret) {
-        std::cout << "Failed: {}", ret.error();
+        std::cout << "Failed: " << ret.error() << std::endl;
     }
 
     world_exe::util::memory::MatTripleBuffer buffer{[] {
@@ -41,8 +41,8 @@ int main(int argc, const char* const* argv) {
             if (auto ret = camera.read_image(); ret.has_value()) {
                 mat = ret.value();
                 buffer.set(mat);
-                if (fps_.count())
-                    std::cout << "fps: " << fps_.fps() << std::endl;
+                // if (fps_.count())
+                //     std::cout << "fps: " << fps_.fps() << std::endl;
             } else {
                 std::cout << "Failed: {}", ret.error();
             }

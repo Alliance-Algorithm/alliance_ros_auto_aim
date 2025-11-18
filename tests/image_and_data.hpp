@@ -64,10 +64,9 @@ public:
                 Eigen::Quaterniond rotation(t.rotation.w, t.rotation.x, t.rotation.y, t.rotation.z);
                 transform_.camera_to_gimbal = translation * rotation;
 
-                auto timestamp =
-                    world_exe::data::TimeStamp::from_nanosec(data.header.stamp.nanosec);
+                auto timestamp = world_exe::data::TimeStamp::from_nanosec(
+                    data.header.stamp.sec * 1e9 + data.header.stamp.nanosec);
                 transform_.camera_capture_begin_time_stamp = timestamp;
-
                 world_exe::core::EventBus::Publish<world_exe::data::CameraGimbalMuzzleSyncData>(
                     world_exe::parameters::ParamsForSystemV1::camera_capture_transforms,
                     transform_);
@@ -81,14 +80,17 @@ public:
                 Eigen::Quaterniond rotation(t.rotation.w, t.rotation.x, t.rotation.y, t.rotation.z);
                 transform_.gimbal_to_muzzle = translation * rotation;
 
-                auto timestamp =
-                    world_exe::data::TimeStamp::from_nanosec(data.header.stamp.nanosec);
+                auto timestamp = world_exe::data::TimeStamp::from_nanosec(
+                    data.header.stamp.sec * 1e9 + data.header.stamp.nanosec);
                 transform_.camera_capture_begin_time_stamp = timestamp;
 
                 world_exe::core::EventBus::Publish<world_exe::data::CameraGimbalMuzzleSyncData>(
                     world_exe::parameters::ParamsForSystemV1::camera_capture_transforms,
                     transform_);
             });
+
+        publisher_predictor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
+            "/alliacne_auto_aim/fly_armor", 10);
 
         publisher_pnp_ = create_publisher<visualization_msgs::msg::MarkerArray>(
             "/alliacne_auto_aim/armor_pnp", 10);
@@ -106,7 +108,7 @@ public:
                 if (!mat.has_value() || mat.value().get().mat.empty())
                     continue;
                 if (fps_.count()) {
-                    std::cout << "b: " << fps_.fps() << std::endl;
+                    std::cout << "real fps: " << fps_.fps() << std::endl;
                 }
                 world_exe::core::EventBus::Publish<world_exe::data::MatStamped>(
                     image_event, mat.value().get());
@@ -140,19 +142,20 @@ public:
                 publisher_gimbal_->publish(msg);
             });
 
-        // world_exe::core::EventBus::Subscript<
-        //     std ::shared_ptr<world_exe::interfaces ::IArmorInGimbalControl>>(
-        //     world_exe::parameters::ParamsForSystemV1::get_lastest_predictor_event,
-        //     [&](std ::shared_ptr<world_exe::interfaces ::IArmorInGimbalControl> const& data)
-        //         -> void {
-        //         visualization_msgs::msg::MarkerArray msg{};
-        //         if (data == nullptr) {
-        //             return;
-        //         }
-        //         world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "gimbal_link", msg);
+        world_exe::core::EventBus::Subscript<
+            std ::shared_ptr<world_exe::interfaces ::IArmorInGimbalControl>>(
+            world_exe::parameters::ParamsForSystemV1::get_lastest_predictor_event,
+            [&](std ::shared_ptr<world_exe::interfaces ::IArmorInGimbalControl> const& data)
+                -> void {
+                visualization_msgs::msg::MarkerArray msg{};
+                if (data == nullptr) {
+                    return;
+                }
 
-        //         publisher_predictor_->publish(msg);
-        //     });
+                world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "gimbal_link", msg);
+
+                publisher_predictor_->publish(msg);
+            });
 
         world_exe::core::EventBus::Subscript<world_exe::data::FireControl>(
             world_exe::parameters::ParamsForSystemV1::fire_control_event,
@@ -198,6 +201,7 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_pnp_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_gimbal_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_fire_dir_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_predictor_;
 
     rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr
         camera_to_gimbal_subscription_;
@@ -205,8 +209,6 @@ private:
         gimbal_to_muzzle_subscription_;
 
     world_exe::data::CameraGimbalMuzzleSyncData transform_;
-
-    // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_predictor_;
 
     // world_exe::tests::mock::Camera2GimbalTransformer mock_yaw_link2gimbal_transform_data_;
     // world_exe::tests::mock::Camera2GimbalTransformer mock_pitch_link2yaw_link_transform_data_;

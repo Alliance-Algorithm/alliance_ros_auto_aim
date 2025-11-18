@@ -48,9 +48,9 @@ public:
         for (const auto& armor : armors_data) {
             using namespace enumeration;
             visualization_msgs::msg::Marker marker;
-            if (armor.id == ArmorIdFlag::Unknow && armor.id == ArmorIdFlag::None) {
+            if (armor.id == ArmorIdFlag::Unknow || armor.id == ArmorIdFlag::None) {
                 continue;
-            } else if (armor.id == ArmorIdFlag::Hero && armor.id == ArmorIdFlag::Base) {
+            } else if (armor.id == ArmorIdFlag::Hero || armor.id == ArmorIdFlag::Base) {
                 marker.set__scale(large_armor_);
             } else {
                 marker.set__scale(small_armor_);
