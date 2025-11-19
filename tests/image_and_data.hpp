@@ -1,5 +1,5 @@
-
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -12,6 +12,7 @@
 #include "data/sync_data.hpp"
 #include "data/time_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "interfaces/armor_in_camera.hpp"
 #include "interfaces/armor_in_gimbal_control.hpp"
 #include "parameters/params_system_v1.hpp"
@@ -41,10 +42,6 @@ public:
         const std::string& image_event, const std::string& sync_data_event,
         std::function<std::optional<std::reference_wrapper<world_exe::data::MatStamped>>()> func)
         : rclcpp::Node("image_and_data", "/alliacne_auto_aim")
-        // , mock_yaw_link2gimbal_transform_data_(
-        //       Eigen::Vector3d(5, 0., 0.), 0., 0., 0.0, M_PI / 6, M_PI / 6.)
-        // , mock_pitch_link2yaw_link_transform_data_(
-        //       Eigen::Vector3d(0, 0, 0), 0., 0., 0., M_PI / 6, M_PI / 12.)
 
         , buffer_(world_exe::util::time_stamp::SteadyClock{}) {
         sync_data_sub_ = create_subscription<std_msgs::msg::UInt8MultiArray>(
@@ -88,6 +85,9 @@ public:
                     world_exe::parameters::ParamsForSystemV1::camera_capture_transforms,
                     transform_);
             });
+
+        fire_control_publisher_ = create_publisher<geometry_msgs::msg::Vector3Stamped>(
+            "/alliacne_auto_aim/fire_control", 10);
 
         publisher_predictor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
             "/alliacne_auto_aim/fly_armor", 10);
@@ -160,9 +160,9 @@ public:
         world_exe::core::EventBus::Subscript<world_exe::data::FireControl>(
             world_exe::parameters::ParamsForSystemV1::fire_control_event,
             [&](const world_exe::data::FireControl& command) -> void {
-                if (!command.fire_allowance) {
+                if (!command.fire_allowance)
                     return;
-                }
+
                 visualization_msgs::msg::Marker marker;
                 world_exe::ros::VectorMarker::generate(
                     command.gimbal_dir.normalized(),
@@ -170,6 +170,20 @@ public:
                     "gimbal_link", marker);
 
                 publisher_fire_dir_->publish(marker);
+
+                auto msg            = std::make_unique<geometry_msgs::msg::Vector3Stamped>();
+                auto ros_time_stamp = builtin_interfaces::msg::Time();
+                ros_time_stamp.sec =
+                    static_cast<int32_t>(command.time_stamp.to_nanosec() / 1000000000LL);
+                ros_time_stamp.nanosec =
+                    static_cast<uint32_t>(command.time_stamp.to_nanosec()) % 1000000000LL;
+
+                msg->header.stamp = ros_time_stamp;
+                msg->vector.x     = command.gimbal_dir.x();
+                msg->vector.y     = command.gimbal_dir.y();
+                msg->vector.z     = command.gimbal_dir.z();
+
+                fire_control_publisher_->publish(std::move(msg));
             });
 
         // mock_data_generate_jthread = std::jthread([&](std::stop_token const& token) {
@@ -202,6 +216,7 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_gimbal_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_fire_dir_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_predictor_;
+    rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr fire_control_publisher_;
 
     rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr
         camera_to_gimbal_subscription_;
@@ -210,17 +225,7 @@ private:
 
     world_exe::data::CameraGimbalMuzzleSyncData transform_;
 
-    // world_exe::tests::mock::Camera2GimbalTransformer mock_yaw_link2gimbal_transform_data_;
-    // world_exe::tests::mock::Camera2GimbalTransformer mock_pitch_link2yaw_link_transform_data_;
-
-    // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
-    //     mock_armor_in_camera_publisher_;
-    // rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
-    //     mock_armor_in_gimbal_publisher_;
-
-    std::jthread mock_data_generate_jthread;
-
-    // world_exe::data::CameraGimbalMuzzleSyncData mock_transform_data_;
+    // std::jthread mock_data_generate_jthread;
 
     rclcpp::Subscription<std_msgs::msg::UInt8MultiArray>::SharedPtr sync_data_sub_;
     world_exe::util::memory::MatTripleBuffer<world_exe::util::time_stamp::SteadyClock> buffer_;
