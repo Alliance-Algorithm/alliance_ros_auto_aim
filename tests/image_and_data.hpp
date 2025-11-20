@@ -59,7 +59,7 @@ public:
                 const auto& t = data.transform;
                 Eigen::Translation3d translation(t.translation.x, t.translation.y, t.translation.z);
                 Eigen::Quaterniond rotation(t.rotation.w, t.rotation.x, t.rotation.y, t.rotation.z);
-                transform_.camera_to_gimbal = translation * rotation;
+                transform_.camera_to_gimbal = rotation * translation;
 
                 auto timestamp = world_exe::data::TimeStamp::from_nanosec(
                     data.header.stamp.sec * 1e9 + data.header.stamp.nanosec);
@@ -75,7 +75,7 @@ public:
                 const auto& t = data.transform;
                 Eigen::Translation3d translation(t.translation.x, t.translation.y, t.translation.z);
                 Eigen::Quaterniond rotation(t.rotation.w, t.rotation.x, t.rotation.y, t.rotation.z);
-                transform_.gimbal_to_muzzle = translation * rotation;
+                transform_.gimbal_to_muzzle = rotation * translation;
 
                 auto timestamp = world_exe::data::TimeStamp::from_nanosec(
                     data.header.stamp.sec * 1e9 + data.header.stamp.nanosec);
@@ -137,7 +137,7 @@ public:
                     // std::println("no predicted armors");
                     return;
                 }
-                world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "gimbal_link", msg);
+                world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "odom_imu", msg);
 
                 publisher_gimbal_->publish(msg);
             });
@@ -152,7 +152,7 @@ public:
                     return;
                 }
 
-                world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "gimbal_link", msg);
+                world_exe::ros::ArmorMarkerGenerator::generate_all(*data, "odom_imu", msg);
 
                 publisher_predictor_->publish(msg);
             });
@@ -167,9 +167,10 @@ public:
                 world_exe::ros::VectorMarker::generate(
                     command.gimbal_dir.normalized(),
                     rclcpp::Time(static_cast<int64_t>(command.time_stamp.to_nanosec())),
-                    "gimbal_link", marker);
+                    "odom_imu", marker);
 
                 publisher_fire_dir_->publish(marker);
+                // RCLCPP_INFO(this->get_logger(), "fire");
 
                 auto msg            = std::make_unique<geometry_msgs::msg::Vector3Stamped>();
                 auto ros_time_stamp = builtin_interfaces::msg::Time();
