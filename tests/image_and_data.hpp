@@ -87,19 +87,19 @@ public:
             });
 
         fire_control_publisher_ = create_publisher<geometry_msgs::msg::Vector3Stamped>(
-            "/alliacne_auto_aim/fire_control", 10);
+            "/alliance_auto_aim/fire_control", 10);
 
         publisher_predictor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliacne_auto_aim/fly_armor", 10);
+            "/alliance_auto_aim/fly_armor", 10);
 
         publisher_pnp_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliacne_auto_aim/armor_pnp", 10);
+            "/alliance_auto_aim/armor_pnp", 10);
 
         publisher_gimbal_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliacne_auto_aim/armor_in_gimbal", 10);
+            "/alliance_auto_aim/armor_in_gimbal", 10);
 
         publisher_fire_dir_ = create_publisher<visualization_msgs::msg::Marker>(
-            "/alliacne_auto_aim/fire_control_dir", 10);
+            "/alliance_auto_aim/fire_control_dir", 10);
 
         publish_thread = std::thread([image_event, &func, this]() {
             world_exe::util::FpsCounter fps_{};
