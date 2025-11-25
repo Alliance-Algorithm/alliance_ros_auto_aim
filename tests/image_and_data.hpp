@@ -45,7 +45,7 @@ public:
 
         , buffer_(world_exe::util::time_stamp::SteadyClock{}) {
         sync_data_sub_ = create_subscription<std_msgs::msg::UInt8MultiArray>(
-            "/alliacne_auto_aim/camera/sync_data", 10,
+            "/alliacne_auto_aim/camera/sync_data", 5,
             [&](std_msgs::msg::UInt8MultiArray::UniquePtr data) {
                 auto raw    = *reinterpret_cast<const Data*>(data->data.data());
                 auto decode = world_exe::ros::sync_data_process(raw);
@@ -54,7 +54,7 @@ public:
             });
 
         camera_to_gimbal_subscription_ = create_subscription<geometry_msgs::msg::TransformStamped>(
-            "/gimbal/camera_to_gimbal_transform", rclcpp::QoS(10),
+            "/gimbal/camera_to_gimbal_transform", rclcpp::QoS(5),
             [&](geometry_msgs::msg::TransformStamped const& data) {
                 const auto& t = data.transform;
                 Eigen::Translation3d translation(t.translation.x, t.translation.y, t.translation.z);
@@ -70,7 +70,7 @@ public:
             });
 
         gimbal_to_muzzle_subscription_ = create_subscription<geometry_msgs::msg::TransformStamped>(
-            "/gimbal/gimbal_to_muzzle_transform", rclcpp::QoS(10),
+            "/gimbal/gimbal_to_muzzle_transform", rclcpp::QoS(5),
             [&](geometry_msgs::msg::TransformStamped const& data) {
                 const auto& t = data.transform;
                 Eigen::Translation3d translation(t.translation.x, t.translation.y, t.translation.z);
@@ -87,19 +87,19 @@ public:
             });
 
         fire_control_publisher_ = create_publisher<geometry_msgs::msg::Vector3Stamped>(
-            "/alliance_auto_aim/fire_control", 10);
+            "/alliance_auto_aim/fire_control", 5);
 
         publisher_predictor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliance_auto_aim/fly_armor", 10);
+            "/alliance_auto_aim/fly_armor", 5);
 
         publisher_pnp_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliance_auto_aim/armor_pnp", 10);
+            "/alliance_auto_aim/armor_pnp", 5);
 
         publisher_gimbal_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-            "/alliance_auto_aim/armor_in_gimbal", 10);
+            "/alliance_auto_aim/armor_in_gimbal", 5);
 
         publisher_fire_dir_ = create_publisher<visualization_msgs::msg::Marker>(
-            "/alliance_auto_aim/fire_control_dir", 10);
+            "/alliance_auto_aim/fire_control_dir", 5);
 
         publish_thread = std::thread([image_event, &func, this]() {
             world_exe::util::FpsCounter fps_{};
