@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <rclcpp/qos.hpp>
 #include <thread>
 
 #include "armor_marker.hpp"
@@ -19,12 +20,14 @@
 #include "std_msgs/msg/u_int8_multi_array.hpp"
 #include "sync_data_processor.hpp"
 #include "tongji/../../tests/mocks/mock_camera_tranform.hpp"
+#include "tongji/fire_controller/planner/planner.hpp"
 #include "utils/fps_counter.hpp"
 #include "utils/mat_triple_buffer.hpp"
 #include "utils/time_stamp.hpp"
 #include "vector_maker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/node.hpp>
@@ -42,10 +45,9 @@ public:
         const std::string& image_event, const std::string& sync_data_event,
         std::function<std::optional<std::reference_wrapper<world_exe::data::MatStamped>>()> func)
         : rclcpp::Node("image_and_data", "/alliacne_auto_aim")
-
         , buffer_(world_exe::util::time_stamp::SteadyClock{}) {
         sync_data_sub_ = create_subscription<std_msgs::msg::UInt8MultiArray>(
-            "/alliacne_auto_aim/camera/sync_data", 5,
+            "/alliacne_auto_aim/camera/sync_data", rclcpp::QoS(5),
             [&](std_msgs::msg::UInt8MultiArray::UniquePtr data) {
                 auto raw    = *reinterpret_cast<const Data*>(data->data.data());
                 auto decode = world_exe::ros::sync_data_process(raw);
@@ -100,6 +102,8 @@ public:
 
         publisher_fire_dir_ = create_publisher<visualization_msgs::msg::Marker>(
             "/alliance_auto_aim/fire_control_dir", 5);
+        planner_debug_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>(
+            "/alliance_auto_aim/planner_debug", 5);
 
         publish_thread = std::thread([image_event, &func, this]() {
             world_exe::util::FpsCounter fps_{};
@@ -166,8 +170,8 @@ public:
                 visualization_msgs::msg::Marker marker;
                 world_exe::ros::VectorMarker::generate(
                     command.gimbal_dir.normalized(),
-                    rclcpp::Time(static_cast<int64_t>(command.time_stamp.to_nanosec())),
-                    "odom_imu", marker);
+                    rclcpp::Time(static_cast<int64_t>(command.time_stamp.to_nanosec())), "odom_imu",
+                    marker);
 
                 publisher_fire_dir_->publish(marker);
                 // RCLCPP_INFO(this->get_logger(), "fire");
@@ -185,6 +189,29 @@ public:
                 msg->vector.z     = command.gimbal_dir.z();
 
                 fire_control_publisher_->publish(std::move(msg));
+            });
+
+        // 发布规划 yaw/pitch 及其参考（target），便于 Foxglove 绘制四条曲线。
+        world_exe::core::EventBus::Subscript<world_exe::tongji::planner::Plan>(
+            world_exe::parameters::ParamsForSystemV1::planner_debug_event,
+            [&](const world_exe::tongji::planner::Plan& plan) -> void {
+                geometry_msgs::msg::TwistStamped msg;
+                auto ros_time_stamp = builtin_interfaces::msg::Time();
+                // 以规划时间戳作为消息时间
+                // ros_time_stamp.sec =
+                //     static_cast<int32_t>(plan.time_stamp.to_nanosec() / 1000000000LL);
+                // ros_time_stamp.nanosec =
+                //     static_cast<uint32_t>(plan.time_stamp.to_nanosec()) % 1000000000LL;
+                // msg.header.stamp    = ros_time_stamp;
+                // msg.header.frame_id = "odom_imu";
+
+                // linear: yaw 相关，angular: pitch 相关
+                msg.twist.linear.x  = plan.target_yaw;
+                msg.twist.linear.y  = plan.yaw;
+                msg.twist.angular.x = plan.target_pitch;
+                msg.twist.angular.y = plan.pitch;
+
+                planner_debug_pub_->publish(msg);
             });
 
         // mock_data_generate_jthread = std::jthread([&](std::stop_token const& token) {
@@ -218,6 +245,7 @@ private:
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr publisher_fire_dir_;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_predictor_;
     rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr fire_control_publisher_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr planner_debug_pub_;
 
     rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr
         camera_to_gimbal_subscription_;

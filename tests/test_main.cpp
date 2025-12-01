@@ -44,7 +44,7 @@ int main(int argc, const char* const* argv) {
                 // if (fps_.count())
                 //     std::cout << "fps: " << fps_.fps() << std::endl;
             } else {
-                std::cout << "Failed: {}", ret.error();
+                std::cout << "Failed:" << ret.error() << std::endl;
             }
         }
     }};
